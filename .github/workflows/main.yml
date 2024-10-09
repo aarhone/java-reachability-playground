@@ -1,0 +1,50 @@
+name: testing
+
+on: push
+
+permissions:
+  contents: read
+
+jobs:
+    DAST_OWASP:
+      runs-on: ubuntu-latest
+      steps:
+
+        # - name: Login to Docker Hub
+        #   uses: docker/login-action@v2
+        #   with:
+        #     username: ${{ secrets.DOCKER_USERNAME }}
+        #     password: ${{ secrets.DOCKER_PASSWORD }}
+
+        # - name: Pull ZAP Docker Image
+        #   run: |
+        #     docker pull owasp/zap2docker-stable
+        
+        # - name: Run ZAP Baseline Scan
+        #   run: |
+        #     docker run --rm owasp/zap2docker-stable zap-baseline.py -t http://example.com -r zap-report.html
+
+        - name: DAST scan by downloading
+          run: |
+            wget https://github.com/zaproxy/zaproxy/releases/download/v2.14.0/ZAP_2.14.0_Linux.tar.gz
+            tar -xvf ZAP_2.14.0_Linux.tar.gz
+            cd ZAP_2.14.0
+            ./zap.sh -cmd -quickurl http://example.com/ -quickprogress -quickout ./zap_report.html
+            pwd
+            dir
+        
+        -  name: Upload build artifact
+           uses: actions/upload-artifact@v4.3.3
+           with:
+             name: zap_report
+             path: ./ZAP_2.14.0/zap_report.html
+
+    SCA_SNYK:
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v4
+        - name: Run Snyk to check for vulnerabilities
+          uses: snyk/actions/maven@master
+          continue-on-error: true
+          env:
+            SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
